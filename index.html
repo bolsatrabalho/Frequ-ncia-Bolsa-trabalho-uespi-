@@ -1,1 +1,124 @@
-index.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Frequência Bolsistas</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .hidden { display: none; }
+        label { display: block; margin-top: 10px; }
+        select, input { padding: 5px; margin-top: 5px; width: 250px; }
+        button { padding: 5px 10px; margin-top: 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="loginDiv">
+        <h2>Login Coordenador</h2>
+        <label for="email">Email institucional:</label>
+        <input type="email" id="email" placeholder="ex: prex.uespi.br, aluno.uespi.br">
+
+        <label for="senha">Senha:</label>
+        <input type="password" id="senha" placeholder="Senha geral">
+
+        <button onclick="validarLogin()">Entrar</button>
+    </div>
+
+    <!-- TELA DE SELEÇÃO CAMPUS E SETOR -->
+    <div id="selecaoCampusSetor" class="hidden">
+        <h2>Bem-vindo, <span id="nomeCoordenador"></span>!</h2>
+
+        <label for="campus">Selecione seu Campus:</label>
+        <select id="campus">
+            <option value="">--Selecione--</option>
+            <!-- Teresina -->
+            <option value="Clóvis Moura">Clóvis Moura (Teresina)</option>
+            <option value="Poeta Torquato Neto">Poeta Torquato Neto (Teresina)</option>
+            <!-- Parnaíba -->
+            <option value="Prof. Alexandre Alves de Oliveira">Prof. Alexandre Alves de Oliveira (Parnaíba)</option>
+            <!-- Piripiri -->
+            <option value="Prof. Antonio Giovani Alves de Sousa">Prof. Antonio Giovani Alves de Sousa (Piripiri)</option>
+            <!-- Campo Maior -->
+            <option value="Heróis do Jenipapo">Heróis do Jenipapo (Campo Maior)</option>
+            <!-- Picos -->
+            <option value="Prof. Barros Araújo">Prof. Barros Araújo (Picos)</option>
+            <!-- Oeiras -->
+            <option value="Possidônio Queiroz">Possidônio Queiroz (Oeiras)</option>
+            <!-- Floriano -->
+            <option value="Dr. Josefina Demes">Dr. Josefina Demes (Floriano)</option>
+            <!-- São Raimundo Nonato -->
+            <option value="Prof. Ariston Dias Lima">Prof. Ariston Dias Lima (São Raimundo Nonato)</option>
+            <!-- Uruçuí -->
+            <option value="Campus Uruçuí">Campus Uruçuí (Uruçuí)</option>
+            <!-- Bom Jesus -->
+            <option value="Dom José Vasquez Dias">Dom José Vasquez Dias (Bom Jesus)</option>
+            <!-- Corrente -->
+            <option value="Dep. Jesualdo Cavalcante">Dep. Jesualdo Cavalcante (Corrente)</option>
+        </select>
+
+        <label for="setor">Digite seu Setor:</label>
+        <input type="text" id="setor" placeholder="Digite o setor (opcional)">
+
+        <button onclick="continuarSelecao()">Continuar</button>
+    </div>
+
+    <script>
+        // Senha geral
+        const senhaGeral = "teste1234"; // Mude para sua senha geral
+
+        // FUNÇÃO DE LOGIN
+        function validarLogin() {
+            const email = document.getElementById("email").value.trim().toLowerCase();
+            const senha = document.getElementById("senha").value.trim();
+
+            if (!email || !senha) {
+                alert("Preencha email e senha!");
+                return;
+            }
+
+            // Verifica se o email termina com "uespi.br" (qualquer subdomínio é aceito)
+            if (!email.endsWith("uespi.br")) {
+                alert("Email não autorizado! Use seu email institucional (@xxxx.uespi.br).");
+                return;
+            }
+
+            // Verifica a senha geral
+            if (senha !== senhaGeral) {
+                alert("Senha incorreta!");
+                return;
+            }
+
+            // Login válido → mostrar tela de seleção
+            mostrarTelaSelecao(email);
+        }
+
+        // FUNÇÃO PARA MOSTRAR A TELA DE SELEÇÃO
+        function mostrarTelaSelecao(emailCoordenador) {
+            document.getElementById("loginDiv").style.display = "none";
+            document.getElementById("selecaoCampusSetor").style.display = "block";
+            document.getElementById("nomeCoordenador").innerText = emailCoordenador;
+        }
+
+        // FUNÇÃO PARA CONTINUAR APÓS SELEÇÃO
+        function continuarSelecao() {
+            const campus = document.getElementById("campus").value;
+            const setor = document.getElementById("setor").value.trim();
+
+            if (!campus) {
+                alert("Por favor, selecione um Campus!");
+                return;
+            }
+
+            // Salva informações na sessão
+            sessionStorage.setItem("campusSelecionado", campus);
+            sessionStorage.setItem("setorSelecionado", setor);
+            sessionStorage.setItem("coordenadorLogado", document.getElementById("nomeCoordenador").innerText);
+
+            // Próximo passo: tabela interativa
+            alert("Login e seleção concluídos!\nAgora a tabela interativa será carregada.");
+        }
+    </script>
+
+</body>
+</html>
