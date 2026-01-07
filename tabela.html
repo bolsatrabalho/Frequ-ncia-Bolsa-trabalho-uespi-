@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Frequência Bolsistas</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+table { border-collapse: collapse; width: 100%; margin-top: 20px; display:block; overflow-x:auto; white-space: nowrap; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+th { background-color: #f2f2f2; position: sticky; top: 0; }
+input[type="text"] { width: 120px; }
+input[type="file"] { width: 120px; }
+button { padding: 5px 8px; margin: 5px; cursor: pointer; }
+.vermelho { background-color: #f8d7da; } /* célula de falta */
+#botoesControle { margin-bottom: 10px; }
+td input.justificativa, td input.atestado { display: none; width: 120px; }
+</style>
+</head>
+<body>
+
+<h2>Tabela de Frequência - Coordenador: <span id="nomeCoordenador"></span></h2>
+
+<div id="botoesControle">
+    <button onclick="adicionarBolsista()">Adicionar Bolsista</button>
+</div>
+
+<table id="tabelaFrequencia">
+    <thead>
+        <tr>
+            <th>Bolsista</th>
+            <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
+            <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
+            <th>Justificativa</th>
+            <th>Atestado</th>
+            <th>Remover</th>
+            <th id="thResponsavel" style="display:none;">Responsável</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+// Configurações
+let coordenador = sessionStorage.getItem("coordenadorLogado") || "Desconhecido";
+document.getElementById("nomeCoordenador").innerText = coordenador;
+const adminEmail = "bolsatrabalho@prex.uespi.br";
+
+let dados = [];
+
+// Admin vê todos
+if(coordenador === adminEmail){
+    document.getElementById("thResponsavel").style.display = "table-cell";
+    for(let i=0;i<localStorage.length;i++){
+        let chave = localStorage.key(i);
+        if(chave !== "coordenadorLogado" && chave !== "campusSelecionado" && chave !== "setorSelecionado"){
+            let coordDados = JSON.parse(localStorage.getItem(chave)) || [];
+            coordDados.forEach(bolsista=>{
+                bolsista._responsavel = chave;
+                dados.push(bolsista);
+            });
+        }
+    }
+}else{
+    dados = JSON.parse(localStorage.getItem(coordenador)) || [];
+}
+
+// Renderizar tabela
+function renderTabela(){
+    const tbody = document.querySelector("#tabelaFrequencia tbody");
+    tbody.innerHTML = "";
+
+    dados.forEach((bolsista,index)=>{
+        const tr = document.createElement("tr");
+
+        // Nome
+        const tdNome = document.createElement("td");
+        tdNome.innerHTML = `<input type="text" value="${bolsista.nome}" onchange="atualizarNome(${index}, this.value)">`;
+        tr.appendChild(tdNome);
+
+        // Meses
+        for(let i=0;i<12;i++){
+            const tdMes = document.createElement("td");
+            const checkbox = document.createElement("input");
+            checkbox.type="checkbox";
+            checkbox.checked = bolsista.meses[i];
+            checkbox.onchange = ()=>atualizarMes(index,i,checkbox.checked,tdMes);
+            tdMes.appendChild(checkbox);
+            tdMes.classList.toggle("vermelho", !checkbox.checked);
+            tr.appendChild(tdMes);
+        }
+
+        // Justificativa
+        const tdJust = document.createElement("td");
+        tdJust.innerHTML = `<input class="justificativa" type="text" value="${bolsista.justificativa || ''}" onchange="atualizarJust(${index},this.value)">`;
+        if(bolsista.meses.every(m=>m)) tdJust.querySelector("input").style.display="none";
+        else tdJust.querySelector("input").style.display="inline-block";
+        tr.appendChild(tdJust);
+
+        // Atestado
+        const tdAtestado = document.createElement("td");
+        tdAtestado.innerHTML = `<input class="atestado" type="file" onchange="atualizarAtestado(${index},this.files)">`;
+        if(bolsista.meses.every(m=>m)) tdAtestado.querySelector("input").style.display="none";
+        else tdAtestado.querySelector("input").style.display="inline-block";
+        tr.appendChild(tdAtestado);
+
+        // Remover
+        const tdRemover = document.createElement("td");
+        const btnRemover = document.createElement("button");
+        btnRemover.innerText = "Remover";
+        btnRemover.onclick = ()=>removerBolsista(index);
+        tdRemover.appendChild(btnRemover);
+        tr.appendChild(tdRemover);
+
+        // Responsável (admin)
+        if(coordenador===adminEmail){
+            const tdResp=document.createElement("td");
+            tdResp.innerText=bolsista._responsavel||"";
+            tr.appendChild(tdResp);
+        }
+
+        tbody.appendChild(tr);
+    });
+
+    salvar();
+}
+
+// Funções auxiliares
+function atualizarNome(i,valor){ dados[i].nome=valor; salvar(); }
+function atualizarMes(i,mes,valor,td){ 
+    dados[i].meses[mes]=valor; 
+    td.classList.toggle("vermelho", !valor); 
+    atualizarCamposJustAtestado(i);
+    salvar(); 
+}
+function atualizarJust(i,valor){ dados[i].justificativa=valor; salvar(); }
+function atualizarAtestado(i,files){
+    if(files.length>0) dados[i].atestado=files[0].name;
+    else dados[i].atestado="";
+    salvar();
+}
+
+function atualizarCamposJustAtestado(i){
+    const tr = document.querySelectorAll("#tabelaFrequencia tbody tr")[i];
+    const falta = dados[i].meses.some(m=>!m);
+    const justInput = tr.querySelector("input.justificativa");
+    const atestInput = tr.querySelector("input.atestado");
+    if(falta){
+        justInput.style.display="inline-block";
+        atestInput.style.display="inline-block";
+    } else{
+        justInput.style.display="none";
+        atestInput.style.display="none";
+    }
+}
+
+function adicionarBolsista(){
+    dados.push({nome:"",meses:Array(12).fill(false),justificativa:"",atestado:""});
+    renderTabela();
+}
+
+function removerBolsista(i){
+    if(confirm("Remover este bolsista?")){
+        dados.splice(i,1);
+        renderTabela();
+    }
+}
+
+function salvar(){
+    if(coordenador===adminEmail){
+        let mapa={};
+        dados.forEach(b=>{
+            const resp = b._responsavel;
+            if(!mapa[resp]) mapa[resp]=[];
+            mapa[resp].push({
+                nome:b.nome,
+                meses:b.meses,
+                justificativa:b.justificativa,
+                atestado:b.atestado
+            });
+        });
+        for(let chave in mapa){
+            localStorage.setItem(chave,JSON.stringify(mapa[chave]));
+        }
+    }else{
+        localStorage.setItem(coordenador,JSON.stringify(dados));
+    }
+}
+
+// Inicializa
+renderTabela();
+</script>
+
+</body>
+</html>
