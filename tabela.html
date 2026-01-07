@@ -4,16 +4,18 @@
 <meta charset="UTF-8">
 <title>Frequência Bolsistas</title>
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; display:block; overflow-x:auto; white-space: nowrap; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-th { background-color: #f2f2f2; position: sticky; top: 0; }
-input[type="text"] { width: 120px; }
-input[type="file"] { width: 120px; }
-button { padding: 5px 8px; margin: 5px; cursor: pointer; }
-.vermelho { background-color: #f8d7da; } /* célula de falta */
-#botoesControle { margin-bottom: 10px; }
-td input.justificativa, td input.atestado { display: none; width: 120px; }
+body { font-family: Arial, sans-serif; padding: 20px; background-color:#f4f4f4; }
+h2 { margin-bottom:10px; color:#333; }
+table { border-collapse: collapse; width: 100%; display:block; overflow-x:auto; white-space: nowrap; background:#fff; }
+th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+th { background-color:#f2f2f2; position:sticky; top:0; }
+input[type="text"] { width:120px; }
+input[type="file"] { width:120px; }
+button { padding:5px 8px; margin:5px; cursor:pointer; border-radius:4px; border:none; background-color:#4CAF50; color:white; }
+button:hover { background-color:#45a049; }
+.vermelho { background-color:#f8d7da; }
+input.justificativa, input.atestado { display:none; width:120px; }
+#botoesControle { margin-bottom:10px; }
 </style>
 </head>
 <body>
@@ -25,170 +27,156 @@ td input.justificativa, td input.atestado { display: none; width: 120px; }
 </div>
 
 <table id="tabelaFrequencia">
-    <thead>
-        <tr>
-            <th>Bolsista</th>
-            <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
-            <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-            <th>Justificativa</th>
-            <th>Atestado</th>
-            <th>Remover</th>
-            <th id="thResponsavel" style="display:none;">Responsável</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
+<thead>
+<tr>
+    <th>Bolsista</th>
+    <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
+    <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
+    <th>Justificativa</th>
+    <th>Atestado</th>
+    <th>Remover</th>
+    <th id="thResponsavel" style="display:none;">Responsável</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
 
 <script>
-// Configurações
-let coordenador = sessionStorage.getItem("coordenadorLogado") || "Desconhecido";
-document.getElementById("nomeCoordenador").innerText = coordenador;
-const adminEmail = "bolsatrabalho@prex.uespi.br";
+window.onload = function(){
+    const adminEmail = "bolsatrabalho@prex.uespi.br";
+    let coordenador = sessionStorage.getItem("coordenadorLogado") || "desconhecido@uespi.br";
+    coordenador = coordenador.toLowerCase();
+    document.getElementById("nomeCoordenador").innerText = coordenador;
+    console.log("Coordenador logado:", coordenador);
 
-let dados = [];
+    let dados = [];
 
-// Admin vê todos
-if(coordenador === adminEmail){
-    document.getElementById("thResponsavel").style.display = "table-cell";
-    for(let i=0;i<localStorage.length;i++){
-        let chave = localStorage.key(i);
-        if(chave !== "coordenadorLogado" && chave !== "campusSelecionado" && chave !== "setorSelecionado"){
-            let coordDados = JSON.parse(localStorage.getItem(chave)) || [];
-            coordDados.forEach(bolsista=>{
-                bolsista._responsavel = chave;
-                dados.push(bolsista);
-            });
+    // Admin vê todos
+    if(coordenador === adminEmail){
+        document.getElementById("thResponsavel").style.display = "table-cell";
+        for(let i=0;i<localStorage.length;i++){
+            const chave = localStorage.key(i);
+            if(chave !== "coordenadorLogado"){
+                const coordDados = JSON.parse(localStorage.getItem(chave)) || [];
+                coordDados.forEach(bolsista=>{
+                    bolsista._responsavel = chave;
+                    dados.push(bolsista);
+                });
+            }
         }
+    } else {
+        dados = JSON.parse(localStorage.getItem(coordenador)) || [];
     }
-}else{
-    dados = JSON.parse(localStorage.getItem(coordenador)) || [];
-}
 
-// Renderizar tabela
-function renderTabela(){
     const tbody = document.querySelector("#tabelaFrequencia tbody");
-    tbody.innerHTML = "";
 
-    dados.forEach((bolsista,index)=>{
-        const tr = document.createElement("tr");
+    function renderTabela(){
+        tbody.innerHTML = "";
+        dados.forEach((b, i)=>{
+            const tr = document.createElement("tr");
 
-        // Nome
-        const tdNome = document.createElement("td");
-        tdNome.innerHTML = `<input type="text" value="${bolsista.nome}" onchange="atualizarNome(${index}, this.value)">`;
-        tr.appendChild(tdNome);
+            // Nome
+            const tdNome = document.createElement("td");
+            tdNome.innerHTML = `<input type="text" value="${b.nome}" onchange="atualizarNome(${i}, this.value)">`;
+            tr.appendChild(tdNome);
 
-        // Meses
-        for(let i=0;i<12;i++){
-            const tdMes = document.createElement("td");
-            const checkbox = document.createElement("input");
-            checkbox.type="checkbox";
-            checkbox.checked = bolsista.meses[i];
-            checkbox.onchange = ()=>atualizarMes(index,i,checkbox.checked,tdMes);
-            tdMes.appendChild(checkbox);
-            tdMes.classList.toggle("vermelho", !checkbox.checked);
-            tr.appendChild(tdMes);
-        }
+            // Meses
+            for(let m=0;m<12;m++){
+                const tdMes = document.createElement("td");
+                const checkbox = document.createElement("input");
+                checkbox.type="checkbox";
+                checkbox.checked = b.meses[m];
+                checkbox.onchange = ()=>atualizarMes(i,m,checkbox.checked,tdMes);
+                tdMes.appendChild(checkbox);
+                tdMes.classList.toggle("vermelho", !checkbox.checked);
+                tr.appendChild(tdMes);
+            }
 
-        // Justificativa
-        const tdJust = document.createElement("td");
-        tdJust.innerHTML = `<input class="justificativa" type="text" value="${bolsista.justificativa || ''}" onchange="atualizarJust(${index},this.value)">`;
-        if(bolsista.meses.every(m=>m)) tdJust.querySelector("input").style.display="none";
-        else tdJust.querySelector("input").style.display="inline-block";
-        tr.appendChild(tdJust);
+            // Justificativa
+            const tdJust = document.createElement("td");
+            tdJust.innerHTML = `<input class="justificativa" type="text" value="${b.justificativa||''}" onchange="atualizarJust(${i},this.value)">`;
+            tr.appendChild(tdJust);
 
-        // Atestado
-        const tdAtestado = document.createElement("td");
-        tdAtestado.innerHTML = `<input class="atestado" type="file" onchange="atualizarAtestado(${index},this.files)">`;
-        if(bolsista.meses.every(m=>m)) tdAtestado.querySelector("input").style.display="none";
-        else tdAtestado.querySelector("input").style.display="inline-block";
-        tr.appendChild(tdAtestado);
+            // Atestado
+            const tdAtestado = document.createElement("td");
+            tdAtestado.innerHTML = `<input class="atestado" type="file" onchange="atualizarAtestado(${i},this.files)">`;
+            tr.appendChild(tdAtestado);
 
-        // Remover
-        const tdRemover = document.createElement("td");
-        const btnRemover = document.createElement("button");
-        btnRemover.innerText = "Remover";
-        btnRemover.onclick = ()=>removerBolsista(index);
-        tdRemover.appendChild(btnRemover);
-        tr.appendChild(tdRemover);
+            // Remover
+            const tdRemover = document.createElement("td");
+            const btnRemover = document.createElement("button");
+            btnRemover.innerText = "Remover";
+            btnRemover.onclick = ()=>removerBolsista(i);
+            tdRemover.appendChild(btnRemover);
+            tr.appendChild(tdRemover);
 
-        // Responsável (admin)
-        if(coordenador===adminEmail){
-            const tdResp=document.createElement("td");
-            tdResp.innerText=bolsista._responsavel||"";
-            tr.appendChild(tdResp);
-        }
+            // Responsável
+            if(coordenador === adminEmail){
+                const tdResp = document.createElement("td");
+                tdResp.innerText = b._responsavel||"";
+                tr.appendChild(tdResp);
+            }
 
-        tbody.appendChild(tr);
-    });
+            tbody.appendChild(tr);
+        });
 
-    salvar();
-}
-
-// Funções auxiliares
-function atualizarNome(i,valor){ dados[i].nome=valor; salvar(); }
-function atualizarMes(i,mes,valor,td){ 
-    dados[i].meses[mes]=valor; 
-    td.classList.toggle("vermelho", !valor); 
-    atualizarCamposJustAtestado(i);
-    salvar(); 
-}
-function atualizarJust(i,valor){ dados[i].justificativa=valor; salvar(); }
-function atualizarAtestado(i,files){
-    if(files.length>0) dados[i].atestado=files[0].name;
-    else dados[i].atestado="";
-    salvar();
-}
-
-function atualizarCamposJustAtestado(i){
-    const tr = document.querySelectorAll("#tabelaFrequencia tbody tr")[i];
-    const falta = dados[i].meses.some(m=>!m);
-    const justInput = tr.querySelector("input.justificativa");
-    const atestInput = tr.querySelector("input.atestado");
-    if(falta){
-        justInput.style.display="inline-block";
-        atestInput.style.display="inline-block";
-    } else{
-        justInput.style.display="none";
-        atestInput.style.display="none";
+        atualizarCamposJustAtestadoTodos();
+        salvar();
     }
-}
 
-function adicionarBolsista(){
-    dados.push({nome:"",meses:Array(12).fill(false),justificativa:"",atestado:""});
-    renderTabela();
-}
+    // Funções auxiliares
+    window.atualizarNome = function(i, v){ dados[i].nome=v; salvar(); }
+    window.atualizarMes = function(i,m,v,td){
+        dados[i].meses[m]=v;
+        td.classList.toggle("vermelho", !v);
+        atualizarCamposJustAtestado(i);
+        salvar();
+    }
+    window.atualizarJust = function(i,v){ dados[i].justificativa=v; salvar(); }
+    window.atualizarAtestado = function(i,files){
+        dados[i].atestado = files.length>0 ? files[0].name : "";
+        salvar();
+    }
 
-function removerBolsista(i){
-    if(confirm("Remover este bolsista?")){
-        dados.splice(i,1);
+    function atualizarCamposJustAtestado(i){
+        const tr = tbody.querySelectorAll("tr")[i];
+        const falta = dados[i].meses.some(m=>!m);
+        tr.querySelector("input.justificativa").style.display = falta ? "inline-block" : "none";
+        tr.querySelector("input.atestado").style.display = falta ? "inline-block" : "none";
+    }
+    function atualizarCamposJustAtestadoTodos(){
+        dados.forEach((_,i)=>atualizarCamposJustAtestado(i));
+    }
+
+    window.adicionarBolsista = function(){
+        dados.push({nome:"",meses:Array(12).fill(false),justificativa:"",atestado:""});
         renderTabela();
     }
-}
-
-function salvar(){
-    if(coordenador===adminEmail){
-        let mapa={};
-        dados.forEach(b=>{
-            const resp = b._responsavel;
-            if(!mapa[resp]) mapa[resp]=[];
-            mapa[resp].push({
-                nome:b.nome,
-                meses:b.meses,
-                justificativa:b.justificativa,
-                atestado:b.atestado
-            });
-        });
-        for(let chave in mapa){
-            localStorage.setItem(chave,JSON.stringify(mapa[chave]));
+    function removerBolsista(i){
+        if(confirm("Remover este bolsista?")){
+            dados.splice(i,1);
+            renderTabela();
         }
-    }else{
-        localStorage.setItem(coordenador,JSON.stringify(dados));
     }
-}
 
-// Inicializa
-renderTabela();
+    function salvar(){
+        if(coordenador===adminEmail){
+            let mapa={};
+            dados.forEach(b=>{
+                const resp=b._responsavel;
+                if(!mapa[resp]) mapa[resp]=[];
+                mapa[resp].push({nome:b.nome,meses:b.meses,justificativa:b.justificativa,atestado:b.atestado});
+            });
+            for(let chave in mapa){
+                localStorage.setItem(chave,JSON.stringify(mapa[chave]));
+            }
+        } else {
+            localStorage.setItem(coordenador,JSON.stringify(dados));
+        }
+    }
+
+    renderTabela();
+};
 </script>
-
 </body>
 </html>
